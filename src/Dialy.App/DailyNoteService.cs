@@ -74,6 +74,10 @@ public sealed class DailyNoteService
             [
                 $"# {date:yyyy/MM/dd}",
                 string.Empty,
+                "## TODO",
+                string.Empty,
+                "## Note",
+                string.Empty,
                 "- ",
                 string.Empty
             ]);

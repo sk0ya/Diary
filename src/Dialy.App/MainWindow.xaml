@@ -67,7 +67,7 @@
             <Setter Property="BorderThickness"  Value="0" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Cursor"           Value="Hand" />
-            <Setter Property="Padding"          Value="2,5" />
+            <Setter Property="Padding"          Value="1,3" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -97,7 +97,7 @@
 
     <!-- Outer shell — shadow lives here -->
     <Border x:Name="ShellBorder"
-            Margin="16"
+            Margin="0"
             Background="{StaticResource ShellBrush}"
             BorderBrush="{StaticResource StrokeBrush}"
             BorderThickness="1"
@@ -124,27 +124,18 @@
                 </Border.Background>
 
                 <Grid>
-                    <TextBlock x:Name="EntryDateText"
-                               FontFamily="Yu Gothic UI Semibold"
-                               FontSize="15"
-                               Foreground="{StaticResource TextBrush}"
-                               VerticalAlignment="Center" />
-                    <Button x:Name="SettingsButton"
-                            HorizontalAlignment="Right"
+                    <Button x:Name="EntryDateButton"
+                            HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             BorderThickness="0"
-                            FontFamily="Cascadia Code"
-                            FontSize="14"
-                            Foreground="{StaticResource AccentBrush}"
+                            Background="Transparent"
                             Cursor="Hand"
-                            Opacity="0.75"
                             Padding="6,3"
+                            Margin="-6,-3,0,-3"
                             FocusVisualStyle="{x:Null}"
-                            Click="SettingsButton_Click"
-                            Content="⚙">
+                            Click="EntryDateButton_Click">
                         <Button.Style>
                             <Style TargetType="Button">
-                                <Setter Property="Background" Value="Transparent" />
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="Button">
@@ -152,11 +143,10 @@
                                                     Background="{TemplateBinding Background}"
                                                     CornerRadius="6"
                                                     Padding="{TemplateBinding Padding}">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
                                             </Border>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Opacity" Value="1" />
                                                     <Setter TargetName="bg" Property="Background" Value="#18E0926E" />
                                                 </Trigger>
                                             </ControlTemplate.Triggers>
@@ -165,7 +155,88 @@
                                 </Setter>
                             </Style>
                         </Button.Style>
+                        <TextBlock x:Name="EntryDateText"
+                                   FontFamily="Yu Gothic UI Semibold"
+                                   FontSize="15"
+                                   Foreground="{StaticResource TextBrush}"
+                                   VerticalAlignment="Center" />
                     </Button>
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+                        <Button x:Name="SettingsButton"
+                                BorderThickness="0"
+                                FontFamily="Cascadia Code"
+                                FontSize="14"
+                                Foreground="{StaticResource AccentBrush}"
+                                Cursor="Hand"
+                                Opacity="0.75"
+                                Padding="6,3"
+                                FocusVisualStyle="{x:Null}"
+                                Click="SettingsButton_Click"
+                                Content="⚙">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="bg"
+                                                        Background="{TemplateBinding Background}"
+                                                        CornerRadius="6"
+                                                        Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Opacity" Value="1" />
+                                                        <Setter TargetName="bg" Property="Background" Value="#18E0926E" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button x:Name="CloseViewButton"
+                                Margin="6,0,0,0"
+                                BorderThickness="0"
+                                FontFamily="Cascadia Code"
+                                FontSize="14"
+                                Foreground="{StaticResource TextSubtleBrush}"
+                                Cursor="Hand"
+                                Opacity="0.75"
+                                Padding="6,3"
+                                FocusVisualStyle="{x:Null}"
+                                Click="CloseViewButton_Click"
+                                Content="✕">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="bg"
+                                                        Background="{TemplateBinding Background}"
+                                                        CornerRadius="6"
+                                                        Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Opacity" Value="1" />
+                                                        <Setter TargetName="bg" Property="Background" Value="#18E87650" />
+                                                        <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -173,7 +244,7 @@
             <Rectangle Grid.Row="0"
                        Height="1"
                        VerticalAlignment="Bottom"
-                       Margin="20,0">
+                       Margin="0">
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
                         <GradientStop Color="Transparent" Offset="0" />
@@ -188,8 +259,8 @@
             <Border x:Name="CalendarPanel"
                     Grid.Row="1"
                     Visibility="Visible"
-                    Margin="12,8,12,0"
-                    Padding="14,12,14,10"
+                    Margin="0"
+                    Padding="12,8,12,6"
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="{StaticResource StrokeBrush}"
                     BorderThickness="1"
@@ -197,7 +268,7 @@
                 <StackPanel>
 
                     <!-- Month navigation -->
-                    <Grid Margin="0,0,0,10">
+                    <Grid Margin="0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -223,13 +294,13 @@
                             <Button x:Name="TodayJumpButton"
                                     Style="{StaticResource NavButtonStyle}"
                                     Content="今日"
-                                    Margin="10,0,0,0"
+                                    Margin="0"
                                     Click="TodayJumpButton_Click" />
                         </StackPanel>
                     </Grid>
 
                     <!-- Day-of-week headers -->
-                    <UniformGrid Columns="7" Margin="0,0,0,4">
+                    <UniformGrid Columns="7" Margin="0">
                         <TextBlock Text="日" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextBrush}" Opacity="0.88" />
                         <TextBlock Text="月" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextBrush}" Opacity="0.88" />
                         <TextBlock Text="火" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextBrush}" Opacity="0.88" />
@@ -245,17 +316,97 @@
                 </StackPanel>
             </Border>
 
+            <Grid Grid.Row="2" Margin="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="0" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-            <!-- ── Editor ── -->
-            <Border Grid.Row="2"
-                    Margin="12,0,12,12"
-                    Background="{StaticResource EditorBrush}"
-                    BorderBrush="{StaticResource StrokeBrush}"
-                    BorderThickness="1"
-                    CornerRadius="12"
-                    ClipToBounds="True">
-                <ContentControl x:Name="EditorHostContainer" />
-            </Border>
+                <Border Grid.Row="0"
+                        Padding="14,12,14,12"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource StrokeBrush}"
+                        BorderThickness="1"
+                        CornerRadius="12">
+                    <StackPanel>
+                        <Grid Margin="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="TODO"
+                                       FontFamily="Cascadia Code"
+                                       FontSize="11"
+                                       Foreground="{StaticResource TextBrush}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock x:Name="TodoSummaryText"
+                                       Grid.Column="1"
+                                       FontFamily="Cascadia Code"
+                                       FontSize="10"
+                                       Foreground="{StaticResource TextSubtleBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,10,0" />
+
+                            <TextBox x:Name="TodoInputTextBox"
+                                     Grid.Column="2"
+                                     Height="32"
+                                     Margin="0"
+                                     Padding="10,6"
+                                     Background="{StaticResource EditorBrush}"
+                                     BorderBrush="{StaticResource StrokeBrush}"
+                                     BorderThickness="1"
+                                     Foreground="{StaticResource TextBrush}"
+                                     CaretBrush="{StaticResource AccentBrush}"
+                                     FontFamily="Yu Gothic UI"
+                                     FontSize="12"
+                                     VerticalContentAlignment="Center"
+                                     KeyDown="TodoInputTextBox_KeyDown" />
+
+                            <Button x:Name="TodoAddButton"
+                                    Grid.Column="3"
+                                    Height="32"
+                                    MinWidth="32"
+                                    Margin="8,0,0,0"
+                                    Padding="0"
+                                    Background="#18E0926E"
+                                    BorderBrush="{StaticResource StrokeBrush}"
+                                    BorderThickness="1"
+                                    Foreground="{StaticResource AccentBrush}"
+                                    FontFamily="Cascadia Code"
+                                    FontSize="14"
+                                    Cursor="Hand"
+                                    Click="TodoAddButton_Click"
+                                    Content="+" />
+                        </Grid>
+
+                        <TextBlock x:Name="TodoEmptyText"
+                                   Margin="0"
+                                   FontFamily="Yu Gothic UI"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextSubtleBrush}"
+                                   Text="TODO はまだありません" />
+
+                        <ScrollViewer MaxHeight="150"
+                                      VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="TodoListPanel" />
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+                <!-- ── Editor ── -->
+                <Border Grid.Row="2"
+                        Background="{StaticResource EditorBrush}"
+                        BorderBrush="{StaticResource StrokeBrush}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        ClipToBounds="True">
+                    <ContentControl x:Name="EditorHostContainer" />
+                </Border>
+            </Grid>
         </Grid>
     </Border>
 </Window>

@@ -90,6 +90,7 @@ public partial class MainWindow : Window
         _loadedDate = today;
         _calendarMonth = new DateOnly(today.Year, today.Month, 1);
         UpdateEntryChrome(today, todayPath);
+        RefreshTodoView();
 
         BuildCalendar();
     }
@@ -129,6 +130,7 @@ public partial class MainWindow : Window
 
         _autoSaveTimer.Stop();
         _autoSaveTimer.Start();
+        RefreshTodoView();
     }
 
     private void EditorHost_OnSaveRequested(object? sender, SaveRequestedEventArgs e)
@@ -192,9 +194,14 @@ public partial class MainWindow : Window
         DragMove();
     }
 
-    private void HideToStandby()
+    private void EntryDateButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_isClosing || _isHiding || !IsVisible || _settings.AlwaysVisible)
+        ToggleCalendarVisibility();
+    }
+
+    private void HideToStandby(bool force = false)
+    {
+        if (_isClosing || _isHiding || !IsVisible || (!force && _settings.AlwaysVisible))
         {
             return;
         }
@@ -282,9 +289,111 @@ public partial class MainWindow : Window
         _loadedDate = date;
 
         UpdateEntryChrome(date, path);
+        RefreshTodoView();
 
         BuildCalendar();
         FocusEditor();
+    }
+
+    private void TodoAddButton_Click(object sender, RoutedEventArgs e)
+    {
+        AddTodoFromInput();
+    }
+
+    private void TodoInputTextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        AddTodoFromInput();
+    }
+
+    private void AddTodoFromInput()
+    {
+        var todoText = TodoInputTextBox.Text.Trim();
+        if (todoText.Length == 0)
+        {
+            return;
+        }
+
+        var updatedText = TodoSectionService.AddTodo(EditorHost.Text, todoText);
+        ApplyTodoDocumentChange(updatedText);
+        TodoInputTextBox.Clear();
+    }
+
+    private void TodoCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.CheckBox checkBox ||
+            checkBox.Tag is not int lineIndex ||
+            checkBox.IsChecked is not bool isCompleted)
+        {
+            return;
+        }
+
+        if (!TodoSectionService.TrySetCompletion(EditorHost.Text, lineIndex, isCompleted, out var updatedText))
+        {
+            return;
+        }
+
+        ApplyTodoDocumentChange(updatedText);
+    }
+
+    private void ApplyTodoDocumentChange(string updatedText)
+    {
+        var currentText = EditorHost.Text ?? string.Empty;
+        if (string.Equals(currentText, updatedText, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var cursor = EditorHost.Engine.Cursor;
+        EditorHost.SetText(updatedText);
+        EditorHost.Engine.SetCursorPosition(cursor);
+
+        _autoSaveTimer.Stop();
+        RefreshTodoView();
+        SaveCurrentEntry();
+    }
+
+    private void RefreshTodoView()
+    {
+        var items = TodoSectionService.Parse(EditorHost.Text);
+        TodoListPanel.Children.Clear();
+
+        var completedCount = items.Count(static item => item.IsCompleted);
+        TodoSummaryText.Text = items.Count == 0
+            ? "0 / 0"
+            : $"{completedCount} / {items.Count} 完了";
+        TodoEmptyText.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        foreach (var item in items)
+        {
+            var label = new TextBlock
+            {
+                Text = item.Text,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = item.IsCompleted
+                    ? (SolidColorBrush)FindResource("TextSubtleBrush")
+                    : (SolidColorBrush)FindResource("TextBrush"),
+                TextDecorations = item.IsCompleted ? TextDecorations.Strikethrough : null
+            };
+
+            var checkBox = new System.Windows.Controls.CheckBox
+            {
+                Content = label,
+                IsChecked = item.IsCompleted,
+                Tag = item.LineIndex,
+                Margin = new Thickness(0),
+                Foreground = (SolidColorBrush)FindResource("AccentBrush")
+            };
+            checkBox.Checked += TodoCheckBox_Changed;
+            checkBox.Unchecked += TodoCheckBox_Changed;
+
+            TodoListPanel.Children.Add(checkBox);
+        }
     }
 
     private void CalPrevMonthButton_Click(object sender, RoutedEventArgs e)
@@ -317,6 +426,17 @@ public partial class MainWindow : Window
     {
         if (sender is Button { Tag: DateOnly date })
             NavigateToEntry(date);
+    }
+
+    private void ToggleCalendarVisibility()
+    {
+        var willShow = CalendarPanel.Visibility != Visibility.Visible;
+        CalendarPanel.Visibility = willShow ? Visibility.Visible : Visibility.Collapsed;
+
+        if (willShow)
+        {
+            BuildCalendar();
+        }
     }
 
     private void BuildCalendar()
@@ -368,11 +488,11 @@ public partial class MainWindow : Window
         {
             var dot = new Border
             {
-                Width               = 4, Height = 4,
+                Width               = 3, Height = 3,
                 Background          = accent,
-                CornerRadius        = new CornerRadius(2),
+                CornerRadius        = new CornerRadius(1.5),
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Margin              = new Thickness(0, 2, 0, 0)
+                Margin              = new Thickness(0, 1, 0, 0)
             };
             var stack = new StackPanel();
             stack.Children.Add(number);
@@ -435,6 +555,11 @@ public partial class MainWindow : Window
         var dialog = new SettingsWindow(_settings) { Owner = this };
         dialog.Closed += (_, _) => ApplySettings(dialog.Result);
         dialog.Show();
+    }
+
+    private void CloseViewButton_Click(object sender, RoutedEventArgs e)
+    {
+        HideToStandby(force: true);
     }
 
 }
