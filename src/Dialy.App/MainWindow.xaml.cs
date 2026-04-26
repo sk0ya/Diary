@@ -40,6 +40,7 @@ public partial class MainWindow : Window
     private DateTimeOffset _ignoreDeactivateUntil = DateTimeOffset.MinValue;
     private bool _isClosing;
     private bool _isHiding;
+    private bool _wasActiveSinceReveal;
     private bool _editorHostNeedsRecreate;
     private DateOnly _calendarMonth = new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1);
     private TodoListMode _todoListMode = TodoListMode.Daily;
@@ -77,6 +78,7 @@ public partial class MainWindow : Window
         PositionWindow(workingArea, cursorX);
 
         _ignoreDeactivateUntil = DateTimeOffset.UtcNow.AddMilliseconds(700);
+        _wasActiveSinceReveal = false;
 
         if (!IsVisible)
         {
@@ -228,13 +230,23 @@ public partial class MainWindow : Window
         source?.AddHook(WndProc);
     }
 
+    protected override void OnActivated(EventArgs e)
+    {
+        base.OnActivated(e);
+        _wasActiveSinceReveal = true;
+    }
+
+    protected override void OnDeactivated(EventArgs e)
+    {
+        base.OnDeactivated(e);
+        ScheduleHideToStandby();
+    }
+
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (msg == WM_ACTIVATEAPP && wParam == IntPtr.Zero &&
-            !_isClosing && !_isHiding && !_settings.AlwaysVisible &&
-            DateTimeOffset.UtcNow >= _ignoreDeactivateUntil)
+        if (msg == WM_ACTIVATEAPP && wParam == IntPtr.Zero)
         {
-            Dispatcher.BeginInvoke(() => HideToStandby());
+            ScheduleHideToStandby();
         }
 
         return IntPtr.Zero;
@@ -290,6 +302,124 @@ public partial class MainWindow : Window
         {
             _isHiding = false;
         }
+    }
+
+    public void PollAutoHide(int cursorX, int cursorY, bool mouseButtonJustPressed)
+    {
+        if (_isClosing || _isHiding || !IsVisible || _settings.AlwaysVisible)
+        {
+            return;
+        }
+
+        if (DateTimeOffset.UtcNow < _ignoreDeactivateUntil)
+        {
+            return;
+        }
+
+        var foregroundWindow = NormalizeWindowHandle(GetForegroundWindow());
+        if (OwnsWindowHandle(foregroundWindow))
+        {
+            _wasActiveSinceReveal = true;
+            return;
+        }
+
+        if (_wasActiveSinceReveal && foregroundWindow != IntPtr.Zero)
+        {
+            HideToStandby();
+            return;
+        }
+
+        if (!mouseButtonJustPressed)
+        {
+            return;
+        }
+
+        var clickedWindow = NormalizeWindowHandle(WindowFromPoint(new NativePoint(cursorX, cursorY)));
+        if (!OwnsWindowHandle(clickedWindow))
+        {
+            HideToStandby();
+        }
+    }
+
+    private void ScheduleHideToStandby(bool bypassIgnoreWindow = false)
+    {
+        if (_isClosing || _isHiding || !IsVisible || _settings.AlwaysVisible)
+        {
+            return;
+        }
+
+        Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
+        {
+            if (_isClosing || _isHiding || !IsVisible || _settings.AlwaysVisible)
+            {
+                return;
+            }
+
+            if (!bypassIgnoreWindow && DateTimeOffset.UtcNow < _ignoreDeactivateUntil)
+            {
+                return;
+            }
+
+            if (IsActive || HasActiveOwnedWindow())
+            {
+                return;
+            }
+
+            HideToStandby();
+        });
+    }
+
+    private bool HasActiveOwnedWindow()
+    {
+        foreach (Window ownedWindow in OwnedWindows)
+        {
+            if (ownedWindow.IsVisible && ownedWindow.IsActive)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool OwnsWindowHandle(IntPtr handle)
+    {
+        if (handle == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        var mainHandle = new WindowInteropHelper(this).Handle;
+        if (handle == mainHandle)
+        {
+            return true;
+        }
+
+        foreach (Window ownedWindow in OwnedWindows)
+        {
+            if (!ownedWindow.IsVisible)
+            {
+                continue;
+            }
+
+            if (handle == new WindowInteropHelper(ownedWindow).Handle)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static IntPtr NormalizeWindowHandle(IntPtr handle)
+    {
+        if (handle == IntPtr.Zero)
+        {
+            return IntPtr.Zero;
+        }
+
+        var rootHandle = GetAncestor(handle, GaRoot);
+        return rootHandle == IntPtr.Zero ? handle : rootHandle;
     }
 
     private bool SaveCurrentEntry()
@@ -810,7 +940,12 @@ public partial class MainWindow : Window
         _ignoreDeactivateUntil = DateTimeOffset.UtcNow.AddSeconds(5);
 
         var dialog = new SettingsWindow(_settings) { Owner = this };
-        dialog.Closed += (_, _) => ApplySettings(dialog.Result);
+        dialog.Closed += (_, _) =>
+        {
+            ApplySettings(dialog.Result);
+            _ignoreDeactivateUntil = DateTimeOffset.MinValue;
+            ScheduleHideToStandby(bypassIgnoreWindow: true);
+        };
         dialog.Show();
     }
 
@@ -838,6 +973,31 @@ public partial class MainWindow : Window
             path,
             _dailyNoteService.GetEntryPath(date),
             StringComparison.OrdinalIgnoreCase);
+    }
+
+    private const uint GaRoot = 2;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr WindowFromPoint(NativePoint point);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private readonly struct NativePoint
+    {
+        public NativePoint(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
+
+        public readonly int X;
+
+        public readonly int Y;
     }
 
 }

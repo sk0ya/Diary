@@ -22,6 +22,7 @@ public partial class App : System.Windows.Application
     private CursorPoint? _lastCursor;
     private ArmedEdge? _armedEdge;
     private DateTimeOffset _lastRevealAt = DateTimeOffset.MinValue;
+    private bool _wasPointerButtonDown;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -50,8 +51,13 @@ public partial class App : System.Windows.Application
             return;
         }
 
+        var isPointerButtonDown = IsPointerButtonDown();
+        var pointerButtonJustPressed = isPointerButtonDown && !_wasPointerButtonDown;
+        _wasPointerButtonDown = isPointerButtonDown;
+
         if (_hiddenMainWindow.IsVisible)
         {
+            _hiddenMainWindow.PollAutoHide(cursor.X, cursor.Y, pointerButtonJustPressed);
             ResetEdgeState(cursor);
             return;
         }
@@ -183,6 +189,17 @@ public partial class App : System.Windows.Application
 
     [DllImport("user32.dll")]
     private static extern bool GetCursorPos(out CursorPoint lpPoint);
+
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int vKey);
+
+    private static bool IsPointerButtonDown()
+    {
+        const int VkLButton = 0x01;
+        const int VkRButton = 0x02;
+        return (GetAsyncKeyState(VkLButton) & 0x8000) != 0 ||
+               (GetAsyncKeyState(VkRButton) & 0x8000) != 0;
+    }
 
     private readonly record struct ArmedEdge(ScreenEdge Edge, string ScreenDeviceName, DateTimeOffset ArmedAt);
 
