@@ -1,3 +1,4 @@
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
@@ -19,6 +20,7 @@ public partial class App : System.Windows.Application
     private MainWindow? _hiddenMainWindow;
     private DispatcherTimer? _edgeWatcher;
     private NotifyIcon? _trayIcon;
+    private DrawingIcon? _trayIconImage;
     private CursorPoint? _lastCursor;
     private ArmedEdge? _armedEdge;
     private DateTimeOffset _lastRevealAt = DateTimeOffset.MinValue;
@@ -106,11 +108,23 @@ public partial class App : System.Windows.Application
         _trayIcon = new NotifyIcon
         {
             Text = "Dialy",
-            Icon = DrawingIcon.ExtractAssociatedIcon(Environment.ProcessPath ?? string.Empty) ?? System.Drawing.SystemIcons.Application,
+            Icon = _trayIconImage = LoadTrayIcon(),
             Visible = true,
             ContextMenuStrip = menu
         };
         _trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(RevealAtCursor);
+    }
+
+    private static DrawingIcon LoadTrayIcon()
+    {
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Dialy.ico");
+        if (File.Exists(iconPath))
+        {
+            return new DrawingIcon(iconPath);
+        }
+
+        return DrawingIcon.ExtractAssociatedIcon(Environment.ProcessPath ?? string.Empty) ??
+               System.Drawing.SystemIcons.Application;
     }
 
     private void RevealAtCursor()
@@ -227,6 +241,9 @@ public partial class App : System.Windows.Application
             _trayIcon.Dispose();
             _trayIcon = null;
         }
+
+        _trayIconImage?.Dispose();
+        _trayIconImage = null;
 
         base.OnExit(e);
     }

@@ -7,9 +7,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>Dialy.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Update="Dialy.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <PackageReference Include="Editor.Controls" Version="0.1.1" />
     <PackageReference Include="Editor.Controls.Defaults" Version="0.1.1" />
   </ItemGroup>
