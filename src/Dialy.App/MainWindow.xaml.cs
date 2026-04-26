@@ -32,13 +32,15 @@ public partial class MainWindow : Window
     private DailyNoteService _dailyNoteService;
     private BacklogTodoService _backlogTodoService;
     private readonly DispatcherTimer _autoSaveTimer;
-    private VimEditorControl EditorHost { get; }
+    private VimEditorControl _editorHost = null!;
+    private VimEditorControl EditorHost => _editorHost;
 
     private DateOnly? _loadedDate;
     private string? _backlogMarkdown;
     private DateTimeOffset _ignoreDeactivateUntil = DateTimeOffset.MinValue;
     private bool _isClosing;
     private bool _isHiding;
+    private bool _editorHostNeedsRecreate;
     private DateOnly _calendarMonth = new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1);
     private TodoListMode _todoListMode = TodoListMode.Daily;
 
@@ -49,13 +51,7 @@ public partial class MainWindow : Window
         _dailyNoteService = new DailyNoteService(_settings.RootDirectory);
         _backlogTodoService = new BacklogTodoService(_settings.RootDirectory);
 
-        EditorHost = new VimEditorControl(VimEditorControlDefaults.CreateOptions());
-        EditorHostContainer.Content = EditorHost;
-
-        EditorHost.SetTheme(EditorTheme.Nord.WithAccent(MediaColor.FromRgb(0xDA, 0x8A, 0x67)));
-        EditorHost.BufferChanged += EditorHost_OnBufferChanged;
-        EditorHost.SaveRequested += EditorHost_OnSaveRequested;
-        EditorHost.QuitRequested += EditorHost_OnQuitRequested;
+        InitializeEditorHost();
 
         Closing += MainWindow_OnClosing;
 
@@ -71,9 +67,11 @@ public partial class MainWindow : Window
 
     public void Reveal(DrawingRectangle workingArea, int cursorX)
     {
+        EnsureEditorHostAvailable();
+
         if (_loadedDate is null || string.IsNullOrWhiteSpace(EditorHost.FilePath))
         {
-            EnsureTodayNoteLoaded();
+            EnsureCurrentEntryLoaded();
         }
 
         PositionWindow(workingArea, cursorX);
@@ -109,6 +107,21 @@ public partial class MainWindow : Window
         BuildCalendar();
     }
 
+    private void EnsureCurrentEntryLoaded()
+    {
+        if (_loadedDate is { } loadedDate)
+        {
+            var path = _dailyNoteService.PrepareEntry(loadedDate);
+            LoadEntryIntoEditor(loadedDate);
+            UpdateEntryChrome(loadedDate, path);
+            RefreshTodoView();
+            BuildCalendar();
+            return;
+        }
+
+        EnsureTodayNoteLoaded();
+    }
+
     private void PositionWindow(DrawingRectangle workingArea, int cursorX)
     {
         var shellMargin = ShellBorder.Margin;
@@ -131,6 +144,48 @@ public partial class MainWindow : Window
             EditorHost.Focus();
             Keyboard.Focus(EditorHost);
         }, DispatcherPriority.Input);
+    }
+
+    private void InitializeEditorHost()
+    {
+        if (_editorHost is not null)
+        {
+            _editorHost.BufferChanged -= EditorHost_OnBufferChanged;
+            _editorHost.SaveRequested -= EditorHost_OnSaveRequested;
+            _editorHost.QuitRequested -= EditorHost_OnQuitRequested;
+            _editorHost.Unloaded -= EditorHost_OnUnloaded;
+        }
+
+        var editorHost = new VimEditorControl(VimEditorControlDefaults.CreateOptions());
+        editorHost.SetTheme(EditorTheme.Nord.WithAccent(MediaColor.FromRgb(0xDA, 0x8A, 0x67)));
+        editorHost.BufferChanged += EditorHost_OnBufferChanged;
+        editorHost.SaveRequested += EditorHost_OnSaveRequested;
+        editorHost.QuitRequested += EditorHost_OnQuitRequested;
+        editorHost.Unloaded += EditorHost_OnUnloaded;
+
+        _editorHost = editorHost;
+        EditorHostContainer.Content = editorHost;
+        _editorHostNeedsRecreate = false;
+    }
+
+    private void EnsureEditorHostAvailable()
+    {
+        if (!_editorHostNeedsRecreate)
+        {
+            return;
+        }
+
+        InitializeEditorHost();
+    }
+
+    private void EditorHost_OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (_isClosing)
+        {
+            return;
+        }
+
+        _editorHostNeedsRecreate = true;
     }
 
     private void AutoSaveTimer_OnTick(object? sender, EventArgs e)
@@ -179,7 +234,7 @@ public partial class MainWindow : Window
             !_isClosing && !_isHiding && !_settings.AlwaysVisible &&
             DateTimeOffset.UtcNow >= _ignoreDeactivateUntil)
         {
-            Dispatcher.BeginInvoke(HideToStandby);
+            Dispatcher.BeginInvoke(() => HideToStandby());
         }
 
         return IntPtr.Zero;
