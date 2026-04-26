@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using Editor.Controls;
 using Editor.Controls.Themes;
@@ -38,7 +39,6 @@ public partial class MainWindow : Window
         EditorHost.SaveRequested += EditorHost_OnSaveRequested;
         EditorHost.QuitRequested += EditorHost_OnQuitRequested;
 
-        Deactivated += MainWindow_OnDeactivated;
         Closing += MainWindow_OnClosing;
 
         _autoSaveTimer = new DispatcherTimer
@@ -139,14 +139,24 @@ public partial class MainWindow : Window
         HideToStandby();
     }
 
-    private void MainWindow_OnDeactivated(object? sender, EventArgs e)
+    private const int WM_ACTIVATEAPP = 0x001C;
+
+    protected override void OnSourceInitialized(EventArgs e)
     {
-        if (_isClosing || _isHiding || DateTimeOffset.UtcNow < _ignoreDeactivateUntil)
+        base.OnSourceInitialized(e);
+        var source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
+        source?.AddHook(WndProc);
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_ACTIVATEAPP && wParam == IntPtr.Zero &&
+            !_isClosing && !_isHiding && DateTimeOffset.UtcNow >= _ignoreDeactivateUntil)
         {
-            return;
+            Dispatcher.BeginInvoke(HideToStandby);
         }
 
-        HideToStandby();
+        return IntPtr.Zero;
     }
 
     private void MainWindow_OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -262,7 +272,9 @@ public partial class MainWindow : Window
     private void UpdateStatusChrome()
     {
         var isModified = EditorHost.Engine.CurrentBuffer.Text.IsModified;
-        StateBadge.Background = (MediaBrush)FindResource(isModified ? "WarningBrush" : "SuccessBrush");
+        var statusBrush = (MediaBrush)FindResource(isModified ? "WarningBrush" : "SuccessBrush");
+        StatusDot.Fill = statusBrush;
+        StateBadgeText.Foreground = statusBrush;
         StateBadgeText.Text = isModified ? "編集中" : "保存済み";
         LastSavedText.Text = _lastSavedAt is null
             ? "最終保存なし"
