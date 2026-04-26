@@ -10,7 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Editor.Controls" Version="0.1.0" />
+    <PackageReference Include="Editor.Controls" Version="0.1.1" />
+    <PackageReference Include="Editor.Controls.Defaults" Version="0.1.1" />
   </ItemGroup>
 
 </Project>

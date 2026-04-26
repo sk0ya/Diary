@@ -18,6 +18,7 @@ public partial class MainWindow : Window
 
     private readonly DailyNoteService _dailyNoteService = new();
     private readonly DispatcherTimer _autoSaveTimer;
+    private VimEditorControl EditorHost { get; }
 
     private DateOnly? _loadedDate;
     private DateTimeOffset? _lastSavedAt;
@@ -28,6 +29,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        EditorHost = new VimEditorControl(VimEditorControlDefaults.CreateOptions());
+        EditorHostContainer.Content = EditorHost;
 
         EditorHost.SetTheme(EditorTheme.Nord.WithAccent(MediaColor.FromRgb(0xDA, 0x8A, 0x67)));
         EditorHost.BufferChanged += EditorHost_OnBufferChanged;

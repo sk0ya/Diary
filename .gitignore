@@ -14,6 +14,9 @@ obj/
 TestResults/
 coverage/
 
+# Local package feed
+.nuget-local/
+
 # OS / temp files
 .DS_Store
 Thumbs.db
