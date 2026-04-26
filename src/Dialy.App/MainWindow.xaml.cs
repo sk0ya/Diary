@@ -71,7 +71,11 @@ public partial class MainWindow : Window
 
     public void Reveal(DrawingRectangle workingArea, int cursorX)
     {
-        EnsureTodayNoteLoaded();
+        if (_loadedDate is null || string.IsNullOrWhiteSpace(EditorHost.FilePath))
+        {
+            EnsureTodayNoteLoaded();
+        }
+
         PositionWindow(workingArea, cursorX);
 
         _ignoreDeactivateUntil = DateTimeOffset.UtcNow.AddMilliseconds(700);
@@ -88,13 +92,13 @@ public partial class MainWindow : Window
     private void EnsureTodayNoteLoaded()
     {
         var today = DateOnly.FromDateTime(DateTime.Now);
-        var todayPath = _dailyNoteService.EnsureEntry(today);
+        var todayPath = _dailyNoteService.PrepareEntry(today);
         var currentPath = EditorHost.FilePath;
 
         if (!string.Equals(currentPath, todayPath, StringComparison.OrdinalIgnoreCase))
         {
             SaveCurrentEntry();
-            EditorHost.LoadFile(todayPath);
+            LoadEntryIntoEditor(today);
         }
 
         _loadedDate = today;
@@ -149,7 +153,7 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(targetPath))
         {
             targetPath = EditorHost.Engine.CurrentBuffer.FilePath ??
-                         _dailyNoteService.EnsureEntry(DateOnly.FromDateTime(DateTime.Now));
+                         _dailyNoteService.GetEntryPath(DateOnly.FromDateTime(DateTime.Now));
         }
 
         SaveBufferTo(targetPath);
@@ -241,9 +245,20 @@ public partial class MainWindow : Window
             return true;
         }
 
+        if (_loadedDate is { } loadedDate &&
+            IsDailyEntryPath(filePath, loadedDate))
+        {
+            if (_dailyNoteService.ContentMatchesStored(loadedDate, EditorHost.Text))
+            {
+                EditorHost.Engine.CurrentBuffer.Text.MarkSaved();
+                return true;
+            }
+
+            return SaveBufferTo(filePath);
+        }
+
         if (!EditorHost.Engine.CurrentBuffer.Text.IsModified)
         {
-    
             return true;
         }
 
@@ -254,6 +269,17 @@ public partial class MainWindow : Window
     {
         try
         {
+            if (_loadedDate is { } loadedDate &&
+                IsDailyEntryPath(path, loadedDate) &&
+                _dailyNoteService.IsTemplateContent(loadedDate, EditorHost.Text))
+            {
+                _dailyNoteService.DeleteEntry(loadedDate);
+                EditorHost.Engine.CurrentBuffer.Text.MarkSaved();
+                UpdateEntryChrome(loadedDate, path);
+                BuildCalendar();
+                return true;
+            }
+
             var directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrWhiteSpace(directory))
             {
@@ -276,13 +302,12 @@ public partial class MainWindow : Window
             }
 
             UpdateEntryChrome(_loadedDate.Value, EditorHost.Engine.CurrentBuffer.FilePath ?? path);
-    
+            BuildCalendar();
             return true;
         }
         catch (Exception ex)
         {
             System.Windows.MessageBox.Show(this, $"保存に失敗しました。{Environment.NewLine}{ex.Message}", "Dialy", MessageBoxButton.OK, MessageBoxImage.Error);
-    
             return false;
         }
     }
@@ -294,8 +319,8 @@ public partial class MainWindow : Window
         _autoSaveTimer.Stop();
         SaveCurrentEntry();
 
-        var path = _dailyNoteService.EnsureEntry(date);
-        EditorHost.LoadFile(path);
+        var path = _dailyNoteService.PrepareEntry(date);
+        LoadEntryIntoEditor(date);
         _loadedDate = date;
 
         UpdateEntryChrome(date, path);
@@ -565,7 +590,7 @@ public partial class MainWindow : Window
 
     private string LoadBacklogMarkdown()
     {
-        _backlogMarkdown ??= _backlogTodoService.LoadOrCreate();
+        _backlogMarkdown ??= _backlogTodoService.Load();
         return _backlogMarkdown;
     }
 
@@ -583,12 +608,8 @@ public partial class MainWindow : Window
 
     private void CalNextMonthButton_Click(object sender, RoutedEventArgs e)
     {
-        var today = DateOnly.FromDateTime(DateTime.Now);
-        if (_calendarMonth < new DateOnly(today.Year, today.Month, 1))
-        {
-            _calendarMonth = _calendarMonth.AddMonths(1);
-            BuildCalendar();
-        }
+        _calendarMonth = _calendarMonth.AddMonths(1);
+        BuildCalendar();
     }
 
     private void TodayJumpButton_Click(object sender, RoutedEventArgs e)
@@ -622,7 +643,7 @@ public partial class MainWindow : Window
     {
         var today = DateOnly.FromDateTime(DateTime.Now);
         CalMonthText.Text = _calendarMonth.ToString("yyyy年M月", JapaneseCulture);
-        CalNextMonthButton.IsEnabled = _calendarMonth < new DateOnly(today.Year, today.Month, 1);
+        CalNextMonthButton.IsEnabled = true;
 
         var entries = _dailyNoteService.GetExistingEntries(_calendarMonth.Year, _calendarMonth.Month);
         CalDayGrid.Children.Clear();
@@ -691,7 +712,7 @@ public partial class MainWindow : Window
         {
             Content    = content,
             Tag        = date,
-            IsEnabled  = isToday || hasEntry,
+            IsEnabled  = true,
             Background = background,
             Style      = (Style)FindResource("CalDayButtonStyle")
         };
@@ -741,6 +762,27 @@ public partial class MainWindow : Window
     private void CloseViewButton_Click(object sender, RoutedEventArgs e)
     {
         HideToStandby(force: true);
+    }
+
+    private void LoadEntryIntoEditor(DateOnly date)
+    {
+        var path = _dailyNoteService.PrepareEntry(date);
+        if (File.Exists(path))
+        {
+            EditorHost.LoadFile(path);
+            return;
+        }
+
+        EditorHost.Engine.LoadFile(path);
+        EditorHost.SetText(_dailyNoteService.LoadEntry(date));
+    }
+
+    private bool IsDailyEntryPath(string path, DateOnly date)
+    {
+        return string.Equals(
+            path,
+            _dailyNoteService.GetEntryPath(date),
+            StringComparison.OrdinalIgnoreCase);
     }
 
 }

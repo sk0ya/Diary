@@ -20,21 +20,33 @@ public sealed class DailyNoteService
 
     public string RootDirectory { get; }
 
-    public string EnsureEntry(DateOnly date)
+    public string PrepareEntry(DateOnly date)
+    {
+        return GetEntryPath(date);
+    }
+
+    public string LoadEntry(DateOnly date)
     {
         var entryPath = GetEntryPath(date);
-        var entryDirectory = Path.GetDirectoryName(entryPath);
-        if (!string.IsNullOrWhiteSpace(entryDirectory))
-        {
-            Directory.CreateDirectory(entryDirectory);
-        }
+        return File.Exists(entryPath)
+            ? File.ReadAllText(entryPath)
+            : BuildTemplate(date);
+    }
 
-        if (!File.Exists(entryPath))
-        {
-            File.WriteAllText(entryPath, BuildTemplate(date), new UTF8Encoding(false));
-        }
+    public bool ContentMatchesStored(DateOnly date, string content)
+    {
+        return string.Equals(
+            NormalizeLineEndings(content),
+            NormalizeLineEndings(LoadEntry(date)),
+            StringComparison.Ordinal);
+    }
 
-        return entryPath;
+    public bool IsTemplateContent(DateOnly date, string content)
+    {
+        return string.Equals(
+            NormalizeLineEndings(content),
+            NormalizeLineEndings(BuildTemplate(date)),
+            StringComparison.Ordinal);
     }
 
     public string GetEntryPath(DateOnly date)
@@ -60,11 +72,41 @@ public sealed class DailyNoteService
         {
             var name = Path.GetFileNameWithoutExtension(file);
             if (DateOnly.TryParseExact(name, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                    DateTimeStyles.None, out var date))
+                    DateTimeStyles.None, out var date) &&
+                !IsTemplateContent(date, File.ReadAllText(file)))
+            {
                 result.Add(date);
+            }
         }
 
         return result;
+    }
+
+    public void DeleteEntry(DateOnly date)
+    {
+        var entryPath = GetEntryPath(date);
+        if (!File.Exists(entryPath))
+        {
+            return;
+        }
+
+        File.Delete(entryPath);
+
+        var monthDirectory = Path.GetDirectoryName(entryPath);
+        if (!string.IsNullOrWhiteSpace(monthDirectory) &&
+            Directory.Exists(monthDirectory) &&
+            !Directory.EnumerateFileSystemEntries(monthDirectory).Any())
+        {
+            Directory.Delete(monthDirectory);
+
+            var yearDirectory = Path.GetDirectoryName(monthDirectory);
+            if (!string.IsNullOrWhiteSpace(yearDirectory) &&
+                Directory.Exists(yearDirectory) &&
+                !Directory.EnumerateFileSystemEntries(yearDirectory).Any())
+            {
+                Directory.Delete(yearDirectory);
+            }
+        }
     }
 
     private static string BuildTemplate(DateOnly date)
@@ -81,5 +123,10 @@ public sealed class DailyNoteService
                 "- ",
                 string.Empty
             ]);
+    }
+
+    private static string NormalizeLineEndings(string text)
+    {
+        return text.Replace("\r\n", "\n").Replace("\r", "\n");
     }
 }

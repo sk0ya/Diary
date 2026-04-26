@@ -16,14 +16,25 @@ public sealed class BacklogTodoService
 
     public string BacklogPath => Path.Combine(RootDirectory, "_backlog.md");
 
-    public string LoadOrCreate()
+    public string Load()
     {
-        EnsureBacklogFile();
-        return File.ReadAllText(BacklogPath);
+        return File.Exists(BacklogPath)
+            ? File.ReadAllText(BacklogPath)
+            : BuildTemplate();
     }
 
     public void Save(string markdown)
     {
+        if (IsTemplateContent(markdown))
+        {
+            if (File.Exists(BacklogPath))
+            {
+                File.Delete(BacklogPath);
+            }
+
+            return;
+        }
+
         var directory = Path.GetDirectoryName(BacklogPath);
         if (!string.IsNullOrWhiteSpace(directory))
         {
@@ -31,20 +42,6 @@ public sealed class BacklogTodoService
         }
 
         File.WriteAllText(BacklogPath, markdown, new UTF8Encoding(false));
-    }
-
-    private void EnsureBacklogFile()
-    {
-        var directory = Path.GetDirectoryName(BacklogPath);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        if (!File.Exists(BacklogPath))
-        {
-            File.WriteAllText(BacklogPath, BuildTemplate(), new UTF8Encoding(false));
-        }
     }
 
     private static string BuildTemplate()
@@ -57,5 +54,18 @@ public sealed class BacklogTodoService
                 "## TODO",
                 string.Empty
             ]);
+    }
+
+    private static bool IsTemplateContent(string markdown)
+    {
+        return string.Equals(
+            NormalizeLineEndings(markdown),
+            NormalizeLineEndings(BuildTemplate()),
+            StringComparison.Ordinal);
+    }
+
+    private static string NormalizeLineEndings(string text)
+    {
+        return text.Replace("\r\n", "\n").Replace("\r", "\n");
     }
 }
