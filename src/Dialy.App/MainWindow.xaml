@@ -93,6 +93,69 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="TodoModeButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{StaticResource StrokeBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{StaticResource TextSubtleBrush}" />
+            <Setter Property="FontFamily" Value="Cascadia Code" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#18E0926E" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TodoRowActionButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#18E0926E" />
+            <Setter Property="BorderBrush" Value="{StaticResource StrokeBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+            <Setter Property="FontFamily" Value="Cascadia Code" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#24E0926E" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <!-- Outer shell — shadow lives here -->
@@ -338,23 +401,22 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <TextBlock Text="TODO"
-                                       FontFamily="Cascadia Code"
-                                       FontSize="11"
-                                       Foreground="{StaticResource TextBrush}"
-                                       VerticalAlignment="Center" />
-                            <TextBlock x:Name="TodoSummaryText"
-                                       Grid.Column="1"
-                                       FontFamily="Cascadia Code"
-                                       FontSize="10"
-                                       Foreground="{StaticResource TextSubtleBrush}"
-                                       VerticalAlignment="Center"
-                                       Margin="8,0,10,0" />
+                            <Button x:Name="DailyModeButton"
+                                    Grid.Column="0"
+                                    Margin="0"
+                                    Style="{StaticResource TodoModeButtonStyle}"
+                                    Click="DailyModeButton_Click"
+                                    Content="Daily 0/0" />
+                            <Button x:Name="BacklogModeButton"
+                                    Grid.Column="1"
+                                    Style="{StaticResource TodoModeButtonStyle}"
+                                    Click="BacklogModeButton_Click"
+                                    Content="Backlog 0" />
 
                             <TextBox x:Name="TodoInputTextBox"
                                      Grid.Column="2"
                                      Height="32"
-                                     Margin="0"
+                                     Margin="8,0,0,0"
                                      Padding="10,6"
                                      Background="{StaticResource EditorBrush}"
                                      BorderBrush="{StaticResource StrokeBrush}"
@@ -383,17 +445,19 @@
                                     Content="+" />
                         </Grid>
 
-                        <TextBlock x:Name="TodoEmptyText"
-                                   Margin="0"
-                                   FontFamily="Yu Gothic UI"
-                                   FontSize="12"
-                                   Foreground="{StaticResource TextSubtleBrush}"
-                                   Text="TODO はまだありません" />
-
-                        <ScrollViewer MaxHeight="150"
-                                      VerticalScrollBarVisibility="Auto">
-                            <StackPanel x:Name="TodoListPanel" />
-                        </ScrollViewer>
+                        <Grid Margin="0,6,0,0">
+                            <ScrollViewer MaxHeight="150"
+                                          VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="TodoListPanel" />
+                            </ScrollViewer>
+                            <TextBlock x:Name="TodoEmptyText"
+                                       FontFamily="Yu Gothic UI"
+                                       FontSize="12"
+                                       Foreground="{StaticResource TextSubtleBrush}"
+                                       VerticalAlignment="Top"
+                                       IsHitTestVisible="False"
+                                       Text="TODO はまだありません" />
+                        </Grid>
                     </StackPanel>
                 </Border>
 

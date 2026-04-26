@@ -98,6 +98,38 @@ public static partial class TodoSectionService
         return true;
     }
 
+    public static bool TryRemoveTodo(string? markdown, int lineIndex, out string updatedMarkdown, out string removedText)
+    {
+        var document = MarkdownDocument.Parse(markdown ?? string.Empty);
+        removedText = string.Empty;
+
+        if (lineIndex < 0 || lineIndex >= document.Lines.Count)
+        {
+            updatedMarkdown = markdown ?? string.Empty;
+            return false;
+        }
+
+        var match = TodoLineRegex().Match(document.Lines[lineIndex]);
+        if (!match.Success)
+        {
+            updatedMarkdown = markdown ?? string.Empty;
+            return false;
+        }
+
+        removedText = match.Groups["text"].Value.Trim();
+        if (removedText.Length == 0)
+        {
+            updatedMarkdown = markdown ?? string.Empty;
+            return false;
+        }
+
+        document.Lines.RemoveAt(lineIndex);
+        document.EnsureTrailingNewline();
+
+        updatedMarkdown = document.Compose();
+        return true;
+    }
+
     private static void InsertTodoSection(List<string> lines, string todoText)
     {
         var insertIndex = FindNewSectionInsertIndex(lines);

@@ -19,25 +19,35 @@ namespace Dialy.App;
 
 public partial class MainWindow : Window
 {
+    private enum TodoListMode
+    {
+        Daily,
+        Backlog
+    }
+
     private static readonly CultureInfo JapaneseCulture = CultureInfo.GetCultureInfo("ja-JP");
     private const double ScreenEdgeInset = 8;
 
     private AppSettings _settings = AppSettings.Load();
     private DailyNoteService _dailyNoteService;
+    private BacklogTodoService _backlogTodoService;
     private readonly DispatcherTimer _autoSaveTimer;
     private VimEditorControl EditorHost { get; }
 
     private DateOnly? _loadedDate;
+    private string? _backlogMarkdown;
     private DateTimeOffset _ignoreDeactivateUntil = DateTimeOffset.MinValue;
     private bool _isClosing;
     private bool _isHiding;
     private DateOnly _calendarMonth = new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1);
+    private TodoListMode _todoListMode = TodoListMode.Daily;
 
     public MainWindow()
     {
         InitializeComponent();
 
         _dailyNoteService = new DailyNoteService(_settings.RootDirectory);
+        _backlogTodoService = new BacklogTodoService(_settings.RootDirectory);
 
         EditorHost = new VimEditorControl(VimEditorControlDefaults.CreateOptions());
         EditorHostContainer.Content = EditorHost;
@@ -319,8 +329,19 @@ public partial class MainWindow : Window
             return;
         }
 
-        var updatedText = TodoSectionService.AddTodo(EditorHost.Text, todoText);
-        ApplyTodoDocumentChange(updatedText);
+        if (_todoListMode == TodoListMode.Daily)
+        {
+            EnsureDailyEntryLoaded();
+            var updatedText = TodoSectionService.AddTodo(EditorHost.Text, todoText);
+            ApplyDailyTodoDocumentChange(updatedText);
+        }
+        else
+        {
+            var updatedBacklog = TodoSectionService.AddTodo(LoadBacklogMarkdown(), todoText);
+            SaveBacklogMarkdown(updatedBacklog);
+            RefreshTodoView();
+        }
+
         TodoInputTextBox.Clear();
     }
 
@@ -338,10 +359,51 @@ public partial class MainWindow : Window
             return;
         }
 
-        ApplyTodoDocumentChange(updatedText);
+        ApplyDailyTodoDocumentChange(updatedText);
     }
 
-    private void ApplyTodoDocumentChange(string updatedText)
+    private void DailyModeButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetTodoListMode(TodoListMode.Daily);
+    }
+
+    private void BacklogModeButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetTodoListMode(TodoListMode.Backlog);
+    }
+
+    private void SetTodoListMode(TodoListMode mode)
+    {
+        if (_todoListMode == mode)
+        {
+            return;
+        }
+
+        _todoListMode = mode;
+        RefreshTodoView();
+    }
+
+    private void BacklogMoveButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: int lineIndex })
+        {
+            return;
+        }
+
+        EnsureDailyEntryLoaded();
+
+        if (!TodoSectionService.TryRemoveTodo(LoadBacklogMarkdown(), lineIndex, out var updatedBacklog, out var todoText))
+        {
+            return;
+        }
+
+        SaveBacklogMarkdown(updatedBacklog);
+
+        var updatedDailyText = TodoSectionService.AddTodo(EditorHost.Text, todoText);
+        ApplyDailyTodoDocumentChange(updatedDailyText);
+    }
+
+    private void ApplyDailyTodoDocumentChange(string updatedText)
     {
         var currentText = EditorHost.Text ?? string.Empty;
         if (string.Equals(currentText, updatedText, StringComparison.Ordinal))
@@ -360,40 +422,157 @@ public partial class MainWindow : Window
 
     private void RefreshTodoView()
     {
-        var items = TodoSectionService.Parse(EditorHost.Text);
+        var dailyItems = TodoSectionService.Parse(EditorHost.Text);
+        var backlogItems = TodoSectionService.Parse(LoadBacklogMarkdown());
         TodoListPanel.Children.Clear();
 
-        var completedCount = items.Count(static item => item.IsCompleted);
-        TodoSummaryText.Text = items.Count == 0
-            ? "0 / 0"
-            : $"{completedCount} / {items.Count} 完了";
-        TodoEmptyText.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        UpdateTodoModeChrome(dailyItems, backlogItems);
 
+        if (_todoListMode == TodoListMode.Daily)
+        {
+            RenderDailyItems(dailyItems);
+            TodoEmptyText.Text = "Daily の TODO はまだありません";
+            TodoEmptyText.Visibility = dailyItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            RenderBacklogItems(backlogItems);
+            TodoEmptyText.Text = "Backlog はまだありません";
+            TodoEmptyText.Visibility = backlogItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
+    private void RenderDailyItems(IReadOnlyList<TodoItem> items)
+    {
         foreach (var item in items)
         {
             var label = new TextBlock
             {
                 Text = item.Text,
                 TextWrapping = TextWrapping.Wrap,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                LineHeight = 16,
+                LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
                 Foreground = item.IsCompleted
                     ? (SolidColorBrush)FindResource("TextSubtleBrush")
                     : (SolidColorBrush)FindResource("TextBrush"),
                 TextDecorations = item.IsCompleted ? TextDecorations.Strikethrough : null
             };
 
+            var contentHost = new Border
+            {
+                MaxHeight = 32,
+                ClipToBounds = true,
+                Child = label
+            };
+
             var checkBox = new System.Windows.Controls.CheckBox
             {
-                Content = label,
-                IsChecked = item.IsCompleted,
+                Content = contentHost,
                 Tag = item.LineIndex,
-                Margin = new Thickness(0),
-                Foreground = (SolidColorBrush)FindResource("AccentBrush")
+                IsChecked = item.IsCompleted,
+                Foreground = (SolidColorBrush)FindResource("AccentBrush"),
+                Margin = new Thickness(0, 0, 0, 4),
+                VerticalContentAlignment = VerticalAlignment.Top
             };
             checkBox.Checked += TodoCheckBox_Changed;
             checkBox.Unchecked += TodoCheckBox_Changed;
 
             TodoListPanel.Children.Add(checkBox);
         }
+    }
+
+    private void RenderBacklogItems(IReadOnlyList<TodoItem> items)
+    {
+        foreach (var item in items)
+        {
+            var row = new Grid
+            {
+                Margin = new Thickness(0, 0, 0, 6)
+            };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var label = new TextBlock
+            {
+                Text = item.Text,
+                TextWrapping = TextWrapping.Wrap,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                LineHeight = 16,
+                LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
+                Foreground = item.IsCompleted
+                    ? (SolidColorBrush)FindResource("TextSubtleBrush")
+                    : (SolidColorBrush)FindResource("TextBrush"),
+                TextDecorations = item.IsCompleted ? TextDecorations.Strikethrough : null,
+                Margin = new Thickness(0, 0, 8, 0)
+            };
+
+            var contentHost = new Border
+            {
+                MaxHeight = 32,
+                ClipToBounds = true,
+                Child = label
+            };
+
+            var moveButton = new Button
+            {
+                Content = "Dailyへ",
+                Tag = item.LineIndex,
+                Style = (Style)FindResource("TodoRowActionButtonStyle"),
+                Height = 24,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, 1, 0, 0)
+            };
+            moveButton.Click += BacklogMoveButton_Click;
+
+            row.Children.Add(contentHost);
+            Grid.SetColumn(moveButton, 1);
+            row.Children.Add(moveButton);
+            TodoListPanel.Children.Add(row);
+        }
+    }
+
+    private void UpdateTodoModeChrome(IReadOnlyList<TodoItem> dailyItems, IReadOnlyList<TodoItem> backlogItems)
+    {
+        var completedCount = dailyItems.Count(static item => item.IsCompleted);
+        DailyModeButton.Content = dailyItems.Count == 0
+            ? "Daily 0/0"
+            : $"Daily {completedCount}/{dailyItems.Count}";
+        BacklogModeButton.Content = $"Backlog {backlogItems.Count}";
+
+        UpdateTodoModeButtonState(DailyModeButton, _todoListMode == TodoListMode.Daily);
+        UpdateTodoModeButtonState(BacklogModeButton, _todoListMode == TodoListMode.Backlog);
+    }
+
+    private void UpdateTodoModeButtonState(Button button, bool isActive)
+    {
+        button.Background = isActive
+            ? new SolidColorBrush(MediaColor.FromArgb(0x30, 0xE0, 0x92, 0x6E))
+            : new SolidColorBrush(Colors.Transparent);
+        button.BorderBrush = (SolidColorBrush)FindResource(isActive ? "AccentBrush" : "StrokeBrush");
+        button.Foreground = (SolidColorBrush)FindResource(isActive ? "TextBrush" : "TextSubtleBrush");
+    }
+
+    private void EnsureDailyEntryLoaded()
+    {
+        if (!string.IsNullOrWhiteSpace(EditorHost.FilePath))
+        {
+            return;
+        }
+
+        EnsureTodayNoteLoaded();
+    }
+
+    private string LoadBacklogMarkdown()
+    {
+        _backlogMarkdown ??= _backlogTodoService.LoadOrCreate();
+        return _backlogMarkdown;
+    }
+
+    private void SaveBacklogMarkdown(string markdown)
+    {
+        _backlogMarkdown = markdown;
+        _backlogTodoService.Save(markdown);
     }
 
     private void CalPrevMonthButton_Click(object sender, RoutedEventArgs e)
@@ -543,6 +722,8 @@ public partial class MainWindow : Window
             _autoSaveTimer.Stop();
             SaveCurrentEntry();
             _dailyNoteService = new DailyNoteService(_settings.RootDirectory);
+            _backlogTodoService = new BacklogTodoService(_settings.RootDirectory);
+            _backlogMarkdown = null;
             _loadedDate = null;
             EnsureTodayNoteLoaded();
         }
