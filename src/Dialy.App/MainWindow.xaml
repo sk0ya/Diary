@@ -96,7 +96,8 @@
     </Window.Resources>
 
     <!-- Outer shell — shadow lives here -->
-    <Border Margin="28"
+    <Border x:Name="ShellBorder"
+            Margin="16"
             Background="{StaticResource ShellBrush}"
             BorderBrush="{StaticResource StrokeBrush}"
             BorderThickness="1"
@@ -229,13 +230,13 @@
 
                     <!-- Day-of-week headers -->
                     <UniformGrid Columns="7" Margin="0,0,0,4">
-                        <TextBlock Text="日" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
-                        <TextBlock Text="月" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
-                        <TextBlock Text="火" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
-                        <TextBlock Text="水" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
-                        <TextBlock Text="木" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
-                        <TextBlock Text="金" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
-                        <TextBlock Text="土" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
+                        <TextBlock Text="日" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextBrush}" Opacity="0.88" />
+                        <TextBlock Text="月" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextBrush}" Opacity="0.88" />
+                        <TextBlock Text="火" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextBrush}" Opacity="0.88" />
+                        <TextBlock Text="水" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextBrush}" Opacity="0.88" />
+                        <TextBlock Text="木" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextBrush}" Opacity="0.88" />
+                        <TextBlock Text="金" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextBrush}" Opacity="0.88" />
+                        <TextBlock Text="土" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextBrush}" Opacity="0.88" />
                     </UniformGrid>
 
                     <!-- Day buttons (built in code-behind) -->

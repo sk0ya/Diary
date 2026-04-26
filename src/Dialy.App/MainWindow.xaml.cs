@@ -20,6 +20,7 @@ namespace Dialy.App;
 public partial class MainWindow : Window
 {
     private static readonly CultureInfo JapaneseCulture = CultureInfo.GetCultureInfo("ja-JP");
+    private const double ScreenEdgeInset = 8;
 
     private AppSettings _settings = AppSettings.Load();
     private DailyNoteService _dailyNoteService;
@@ -95,14 +96,17 @@ public partial class MainWindow : Window
 
     private void PositionWindow(DrawingRectangle workingArea, int cursorX)
     {
-        Width = Math.Clamp(workingArea.Width * 0.28, 360, 460);
-        Height = workingArea.Height;
-        Top = workingArea.Top;
+        var shellMargin = ShellBorder.Margin;
+        var shellWidth = Math.Clamp(workingArea.Width * 0.28, 360, 460);
+
+        Width = shellWidth + shellMargin.Left + shellMargin.Right;
+        Height = workingArea.Height + shellMargin.Top + shellMargin.Bottom;
+        Top = workingArea.Top - shellMargin.Top;
 
         var alignRight = cursorX >= workingArea.Left + (workingArea.Width / 2);
         Left = alignRight
-            ? workingArea.Right - Width - 18
-            : workingArea.Left + 18;
+            ? workingArea.Right - ScreenEdgeInset - shellMargin.Left - shellWidth
+            : workingArea.Left + ScreenEdgeInset - shellMargin.Left;
     }
 
     private void FocusEditor()
@@ -347,7 +351,6 @@ public partial class MainWindow : Window
     {
         var accent     = new SolidColorBrush(MediaColor.FromRgb(0xE0, 0x92, 0x6E));
         var textBrush  = (SolidColorBrush)FindResource("TextBrush");
-        var subtleBrush = (SolidColorBrush)FindResource("TextSubtleBrush");
 
         var number = new TextBlock
         {
@@ -356,8 +359,8 @@ public partial class MainWindow : Window
             FontFamily          = new FontFamily("Cascadia Code"),
             FontSize            = 12,
             FontWeight          = isToday ? FontWeights.Bold : FontWeights.Normal,
-            Foreground          = isToday ? (SolidColorBrush)FindResource("SuccessBrush") : hasEntry ? accent : (isFuture ? subtleBrush : textBrush),
-            Opacity             = isFuture ? 0.25 : (isToday || hasEntry ? 1.0 : 0.35)
+            Foreground          = isToday ? (SolidColorBrush)FindResource("SuccessBrush") : hasEntry ? accent : textBrush,
+            Opacity             = isFuture ? 0.62 : 1.0
         };
 
         FrameworkElement content;
