@@ -32,6 +32,67 @@
                           Direction="270"
                           Color="#000000"
                           Opacity="0.70" />
+
+        <Style x:Key="NavButtonStyle" TargetType="Button">
+            <Setter Property="Background"        Value="Transparent" />
+            <Setter Property="BorderThickness"   Value="0" />
+            <Setter Property="Foreground"        Value="{StaticResource AccentBrush}" />
+            <Setter Property="FontFamily"        Value="Cascadia Code" />
+            <Setter Property="FontSize"          Value="10" />
+            <Setter Property="Opacity"           Value="0.65" />
+            <Setter Property="Cursor"            Value="Hand" />
+            <Setter Property="Padding"           Value="0,2" />
+            <Setter Property="FocusVisualStyle"  Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="1" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.2" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CalDayButtonStyle" TargetType="Button">
+            <Setter Property="BorderThickness"  Value="0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Cursor"           Value="Hand" />
+            <Setter Property="Padding"          Value="2,5" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <Grid>
+                                <Border x:Name="hover" CornerRadius="6" Background="Transparent" />
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True" />
+                                    <Condition Property="IsEnabled"   Value="True" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="hover" Property="Background" Value="#18E0926E" />
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <!-- Outer shell — shadow lives here -->
@@ -50,7 +111,7 @@
 
             <!-- ── Header ── -->
             <Border Grid.Row="0"
-                    Padding="20,16,20,16"
+                    Padding="16,10,16,10"
                     CornerRadius="20,20,0,0"
                     ClipToBounds="True"
                     MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown">
@@ -62,42 +123,48 @@
                 </Border.Background>
 
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock Text="DIALY"
-                                   FontFamily="Cascadia Code"
-                                   FontSize="9"
-                                   Foreground="{StaticResource AccentBrush}"
-                                   Opacity="0.75" />
-                        <TextBlock x:Name="EntryDateText"
-                                   Margin="0,5,0,0"
-                                   FontFamily="Yu Gothic UI Semibold"
-                                   FontSize="21"
-                                   Foreground="{StaticResource TextBrush}" />
-                    </StackPanel>
-
-                    <!-- Accent badge top-right -->
-                    <Border Grid.Column="1"
-                            VerticalAlignment="Top"
-                            Padding="7,3"
-                            CornerRadius="999">
-                        <Border.Background>
-                            <SolidColorBrush Color="#E0926E" Opacity="0.12" />
-                        </Border.Background>
-                        <Border.BorderBrush>
-                            <SolidColorBrush Color="#E0926E" Opacity="0.25" />
-                        </Border.BorderBrush>
-                        <Border.BorderThickness>1</Border.BorderThickness>
-                        <TextBlock Text="diary"
-                                   FontFamily="Cascadia Code"
-                                   FontSize="10"
-                                   Foreground="{StaticResource AccentBrush}"
-                                   Opacity="0.7" />
-                    </Border>
+                    <TextBlock x:Name="EntryDateText"
+                               FontFamily="Yu Gothic UI Semibold"
+                               FontSize="15"
+                               Foreground="{StaticResource TextBrush}"
+                               VerticalAlignment="Center" />
+                    <Button x:Name="SettingsButton"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            BorderThickness="0"
+                            FontFamily="Cascadia Code"
+                            FontSize="14"
+                            Foreground="{StaticResource AccentBrush}"
+                            Cursor="Hand"
+                            Opacity="0.75"
+                            Padding="6,3"
+                            FocusVisualStyle="{x:Null}"
+                            Click="SettingsButton_Click"
+                            Content="⚙">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="bg"
+                                                    Background="{TemplateBinding Background}"
+                                                    CornerRadius="6"
+                                                    Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Opacity" Value="1" />
+                                                    <Setter TargetName="bg" Property="Background" Value="#18E0926E" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </Grid>
             </Border>
 
@@ -116,46 +183,67 @@
                 </Rectangle.Fill>
             </Rectangle>
 
-            <!-- ── Status bar ── -->
-            <Border Grid.Row="1"
-                    Margin="12,10,12,10"
-                    Padding="14,9"
+            <!-- ── Calendar Panel ── -->
+            <Border x:Name="CalendarPanel"
+                    Grid.Row="1"
+                    Visibility="Visible"
+                    Margin="12,8,12,0"
+                    Padding="14,12,14,10"
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="{StaticResource StrokeBrush}"
                     BorderThickness="1"
                     CornerRadius="10">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                <StackPanel>
 
-                    <!-- Colored dot indicator -->
-                    <Ellipse x:Name="StatusDot"
-                             Grid.Column="0"
-                             Width="7" Height="7"
-                             Fill="{StaticResource SuccessBrush}"
-                             VerticalAlignment="Center"
-                             Margin="0,0,9,0" />
+                    <!-- Month navigation -->
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="CalPrevMonthButton"
+                                Grid.Column="0"
+                                Style="{StaticResource NavButtonStyle}"
+                                Content="←"
+                                Click="CalPrevMonthButton_Click" />
+                        <TextBlock x:Name="CalMonthText"
+                                   Grid.Column="1"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontFamily="Cascadia Code"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextBrush}" />
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <Button x:Name="CalNextMonthButton"
+                                    Style="{StaticResource NavButtonStyle}"
+                                    Content="→"
+                                    Click="CalNextMonthButton_Click" />
+                            <Button x:Name="TodayJumpButton"
+                                    Style="{StaticResource NavButtonStyle}"
+                                    Content="今日"
+                                    Margin="10,0,0,0"
+                                    Click="TodayJumpButton_Click" />
+                        </StackPanel>
+                    </Grid>
 
-                    <TextBlock x:Name="LastSavedText"
-                               Grid.Column="1"
-                               VerticalAlignment="Center"
-                               FontFamily="Cascadia Code"
-                               FontSize="11"
-                               Foreground="{StaticResource TextSubtleBrush}"
-                               Text="保存待ち" />
+                    <!-- Day-of-week headers -->
+                    <UniformGrid Columns="7" Margin="0,0,0,4">
+                        <TextBlock Text="日" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
+                        <TextBlock Text="月" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
+                        <TextBlock Text="火" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
+                        <TextBlock Text="水" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
+                        <TextBlock Text="木" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
+                        <TextBlock Text="金" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
+                        <TextBlock Text="土" HorizontalAlignment="Center" FontFamily="Cascadia Code" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
+                    </UniformGrid>
 
-                    <TextBlock x:Name="StateBadgeText"
-                               Grid.Column="2"
-                               VerticalAlignment="Center"
-                               FontFamily="Cascadia Code"
-                               FontSize="11"
-                               Foreground="{StaticResource SuccessBrush}"
-                               Text="保存済み" />
-                </Grid>
+                    <!-- Day buttons (built in code-behind) -->
+                    <UniformGrid x:Name="CalDayGrid" Columns="7" />
+
+                </StackPanel>
             </Border>
+
 
             <!-- ── Editor ── -->
             <Border Grid.Row="2"
