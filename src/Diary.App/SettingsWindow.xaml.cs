@@ -1,8 +1,8 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Forms;
 
-namespace Dialy.App;
+namespace Diary.App;
 
 public partial class SettingsWindow : Window
 {

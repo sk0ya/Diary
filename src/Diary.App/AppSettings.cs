@@ -1,13 +1,13 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 
-namespace Dialy.App;
+namespace Diary.App;
 
 public sealed class AppSettings
 {
     private static readonly string SettingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "Dialy", "settings.json");
+        "Diary", "settings.json");
 
     public string? RootDirectory { get; set; }
     public bool AlwaysVisible { get; set; }

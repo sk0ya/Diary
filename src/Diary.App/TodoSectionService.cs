@@ -1,6 +1,6 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
-namespace Dialy.App;
+namespace Diary.App;
 
 public readonly record struct TodoItem(int LineIndex, string Text, bool IsCompleted);
 

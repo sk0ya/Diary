@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -15,7 +15,7 @@ using Editor.Controls.Themes;
 using DrawingRectangle = System.Drawing.Rectangle;
 using MediaColor = System.Windows.Media.Color;
 
-namespace Dialy.App;
+namespace Diary.App;
 
 public partial class MainWindow : Window
 {
@@ -492,7 +492,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show(this, $"保存に失敗しました。{Environment.NewLine}{ex.Message}", "Dialy", MessageBoxButton.OK, MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(this, $"保存に失敗しました。{Environment.NewLine}{ex.Message}", "Diary", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
         }
     }
@@ -908,7 +908,7 @@ public partial class MainWindow : Window
     private void UpdateEntryChrome(DateOnly date, string path)
     {
         var dateText = date.ToDateTime(TimeOnly.MinValue).ToString("yyyy年M月d日 dddd", JapaneseCulture);
-        Title = $"Dialy | {date:yyyy-MM-dd}";
+        Title = $"Diary | {date:yyyy-MM-dd}";
         EntryDateText.Text = dateText;
     }
 

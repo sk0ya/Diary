@@ -1,14 +1,14 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 using System.Text;
 
-namespace Dialy.App;
+namespace Diary.App;
 
 public sealed class DailyNoteService
 {
     public static readonly string DefaultRootDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-        "Dialy",
+        "Diary",
         "Entries");
 
     public DailyNoteService(string? rootDirectory = null)

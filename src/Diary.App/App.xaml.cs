@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
@@ -10,7 +10,7 @@ using Screen = System.Windows.Forms.Screen;
 using ToolStripMenuItem = System.Windows.Forms.ToolStripMenuItem;
 using TrayContextMenuStrip = System.Windows.Forms.ContextMenuStrip;
 
-namespace Dialy.App;
+namespace Diary.App;
 
 public partial class App : System.Windows.Application
 {
@@ -107,7 +107,7 @@ public partial class App : System.Windows.Application
 
         _trayIcon = new NotifyIcon
         {
-            Text = "Dialy",
+            Text = "Diary",
             Icon = _trayIconImage = LoadTrayIcon(),
             Visible = true,
             ContextMenuStrip = menu
@@ -117,7 +117,7 @@ public partial class App : System.Windows.Application
 
     private static DrawingIcon LoadTrayIcon()
     {
-        var iconPath = Path.Combine(AppContext.BaseDirectory, "Dialy.ico");
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Diary.ico");
         if (File.Exists(iconPath))
         {
             return new DrawingIcon(iconPath);

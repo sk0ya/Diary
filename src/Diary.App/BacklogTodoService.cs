@@ -1,7 +1,7 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 
-namespace Dialy.App;
+namespace Diary.App;
 
 public sealed class BacklogTodoService
 {
