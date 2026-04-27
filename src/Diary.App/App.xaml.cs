@@ -161,16 +161,6 @@ public partial class App : System.Windows.Application
 
     private static ScreenEdge? DetectEdge(DrawingRectangle bounds, CursorPoint cursor)
     {
-        if (cursor.Y <= bounds.Top)
-        {
-            return ScreenEdge.Top;
-        }
-
-        if (cursor.Y >= bounds.Bottom - 1)
-        {
-            return ScreenEdge.Bottom;
-        }
-
         if (cursor.X <= bounds.Left)
         {
             return ScreenEdge.Left;
@@ -193,8 +183,6 @@ public partial class App : System.Windows.Application
 
         return edge switch
         {
-            ScreenEdge.Top => current.Y <= previous.Value.Y,
-            ScreenEdge.Bottom => current.Y >= previous.Value.Y,
             ScreenEdge.Left => current.X <= previous.Value.X,
             ScreenEdge.Right => current.X >= previous.Value.X,
             _ => false
@@ -219,9 +207,7 @@ public partial class App : System.Windows.Application
 
     private enum ScreenEdge
     {
-        Top,
         Right,
-        Bottom,
         Left
     }
 
