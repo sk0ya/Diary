@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Forms;
 
 namespace Diary.App;
@@ -52,7 +53,8 @@ public partial class SettingsWindow : Window
                 UseDescriptionForTitle = true
             };
 
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var owner = new DialogOwner(new WindowInteropHelper(this).Handle);
+            if (dialog.ShowDialog(owner) == System.Windows.Forms.DialogResult.OK)
                 FolderTextBox.Text = dialog.SelectedPath;
         }
         finally
@@ -64,4 +66,9 @@ public partial class SettingsWindow : Window
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
         => CommitAndClose();
+
+    private sealed class DialogOwner(IntPtr handle) : System.Windows.Forms.IWin32Window
+    {
+        public IntPtr Handle { get; } = handle;
+    }
 }

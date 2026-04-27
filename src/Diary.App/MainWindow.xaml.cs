@@ -937,7 +937,7 @@ public partial class MainWindow : Window
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
-        _ignoreDeactivateUntil = DateTimeOffset.UtcNow.AddSeconds(5);
+        _ignoreDeactivateUntil = DateTimeOffset.MaxValue;
 
         var dialog = new SettingsWindow(_settings) { Owner = this };
         dialog.Closed += (_, _) =>
