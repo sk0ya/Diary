@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using DrawingIcon = System.Drawing.Icon;
@@ -16,11 +17,13 @@ public partial class App : System.Windows.Application
 {
     private static readonly TimeSpan EdgeHoldDuration = TimeSpan.FromMilliseconds(240);
     private static readonly TimeSpan RevealCooldown = TimeSpan.FromMilliseconds(900);
+    private const string SingleInstanceMutexName = @"Local\Diary.App";
 
     private MainWindow? _hiddenMainWindow;
     private DispatcherTimer? _edgeWatcher;
     private NotifyIcon? _trayIcon;
     private DrawingIcon? _trayIconImage;
+    private Mutex? _singleInstanceMutex;
     private CursorPoint? _lastCursor;
     private ArmedEdge? _armedEdge;
     private DateTimeOffset _lastRevealAt = DateTimeOffset.MinValue;
@@ -28,6 +31,15 @@ public partial class App : System.Windows.Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        _singleInstanceMutex = new Mutex(initiallyOwned: true, SingleInstanceMutexName, out var createdNew);
+        if (!createdNew)
+        {
+            _singleInstanceMutex.Dispose();
+            _singleInstanceMutex = null;
+            Shutdown();
+            return;
+        }
+
         base.OnStartup(e);
 
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -230,6 +242,10 @@ public partial class App : System.Windows.Application
 
         _trayIconImage?.Dispose();
         _trayIconImage = null;
+
+        _singleInstanceMutex?.ReleaseMutex();
+        _singleInstanceMutex?.Dispose();
+        _singleInstanceMutex = null;
 
         base.OnExit(e);
     }
