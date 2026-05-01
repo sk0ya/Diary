@@ -14,8 +14,8 @@
     <None Update="Diary.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <PackageReference Include="Editor.Controls" Version="0.1.1" />
-    <PackageReference Include="Editor.Controls.Defaults" Version="0.1.1" />
+    <PackageReference Include="sk0ya.Editor.Controls" Version="1.0.0" />
+    <PackageReference Include="sk0ya.Editor.Controls.Defaults" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
